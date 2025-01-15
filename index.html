@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Processing</title>
+    <style>
+        video {
+            max-width: 400px; /* 缩小视频窗口 */
+            height: auto;
+        }
+        img {
+            max-width: 150px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Files for Video Processing</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label for="video">Video File:</label>
+        <input type="file" name="video" id="video" accept="video/*" required><br>
+        <video id="videoPreview" controls style="display: none;"></video>
+        <br><br>
+
+        <label for="face">Target Face Image:</label>
+        <input type="file" name="face" id="face" accept="image/*"><br>
+        <img id="facePreview" alt="Target Face" style="display: none;"><br><br>
+
+        <label for="mosaic">Mosaic Image:</label>
+        <input type="file" name="mosaic" id="mosaic" accept="image/*"><br>
+        <img id="mosaicPreview" alt="Mosaic Image" style="display: none;"><br><br>
+
+        <button type="submit">Upload and Process</button>
+    </form>
+
+    <div id="status" style="margin-top: 20px;">
+        <!-- 状态信息将在这里更新 -->
+    </div>
+
+    <div id="output" style="margin-top: 20px;">
+        <!-- 下载按钮将在这里生成 -->
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 获取输入框和预览元素
+        const videoInput = document.getElementById('video');
+        const videoPreview = document.getElementById('videoPreview');
+        const faceInput = document.getElementById('face');
+        const facePreview = document.getElementById('facePreview');
+        const mosaicInput = document.getElementById('mosaic');
+        const mosaicPreview = document.getElementById('mosaicPreview');
+
+        // 预览视频文件
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                videoPreview.src = fileURL;
+                videoPreview.style.display = 'block';
+            }
+        });
+
+        // 预览目标人脸图片
+        faceInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    facePreview.src = e.target.result;
+                    facePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 预览马赛克图片
+        mosaicInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    mosaicPreview.src = e.target.result;
+                    mosaicPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $(document).ready(function () {
+            $('#uploadForm').on('submit', function (e) {
+                e.preventDefault(); // 阻止表单默认提交行为
+
+                // 创建 FormData 对象以处理文件
+                var formData = new FormData(this);
+
+                // 显示状态
+                $('#status').html('<p>Processing frames, please wait...</p>');
+                $('#output').html(''); // 清空之前的下载按钮
+
+                // 使用 AJAX 发送请求
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        $('#status').html('<p>Processing completed successfully!</p>');
+
+                        // 添加下载按钮
+                        $('#output').html(
+                            `<a href="/download/${response.filename}" download>
+                                <button>Download Processed Video</button>
+                            </a>`
+                        );
+                    },
+                    error: function (xhr, status, error) {
+                        $('#status').html('<p style="color:red;">Error: ' + xhr.responseText + '</p>');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
